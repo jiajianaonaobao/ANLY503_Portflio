@@ -1,0 +1,20 @@
+name: "Jiahui Chen"                         
+output_dir: "."
+navbar:
+  title: "Portflio of Jiahui Chen "                           
+  type: inverse
+  left:
+    - text: "About"
+      href: About.html
+    - text: "Project"
+      href: Project.html
+    - text: "Homework"
+      href: Homework.html 
+  right:
+    - text: "Contact me"
+      href: mailto:jc3029@georgetown.edu                    # CHANGE HERE 
+    - text: "GitHub"
+      href: https://github.com/jiajianaonaobao      # CHANGE HERE 
+output:
+  html_document:
+    theme: cosmo

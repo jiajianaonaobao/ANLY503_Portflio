@@ -1,0 +1,829 @@
+---
+title: 'COVID-19 Measures Analysis '
+author: "Jiahui Chen"
+date: "12/11/2020"
+output:
+   flexdashboard::flex_dashboard:
+     theme: bootstrap
+     orientation: row
+     vertical_layout: scroll
+---
+
+Objectives {data-navmenu="About"}
+==================
+### **Objectives**
+
+The project aims to conduct analysis on the data with the information about COVID-19 Measures, which have been taken by certain countries from 2020-01-01 to 2020-04-05, by data visualization.
+
+Based the analysis, this project could study the reaction of different countries' government, which may indicate the customs of people from different regions. Meanwhile, this project could reflect the the speed of policies making for each country and each continent, compared to the whole world. All these results would help a little for the war against the COVID19. 
+
+
+  - Explanatory Data Analysis (including histogram, box plot, bar plot, pie chart)
+    - Visualize the COVID19 measures quantity by country, and by continent
+    - Visualize the quantity of the countries which have taken some COVID19 measures by continent
+    
+
+  - Time Series Analysis
+    - Visualize the number of new COVID19 measures per day from Jan. 2020 to Apr. 2020
+    - Visualize the total number of the COVID19 measures on certain days from Jan. 2020 to Apr. 2020
+
+  - Textual (including word cloud, bar plot, network)
+    - Visualize the most frequent words in key words and description of COVID19 measures
+    - Visualize the relationship between the words in the descriptions of COVID19 measures (Sentiment analysis)
+    
+  - Geographical Analysis
+    - Visualize the distribution of the COVID19 measures quantity by country on world map
+    - The quantity of the COVID19 measures of each country could be reflected by the color shade
+
+Data {data-navmenu="About"}
+==================
+### **Data Overview**
+ - The project will use the yelp open-dataset published on Kaggle under the following website:
+https://www.kaggle.com/ksjpswaroop/yelp-data-analysis?select=yelp_business.csv
+ - The raw-dataset contains 4.1 million reviews in 15 cities under 4 countries. After preprocessing, the project would focus on the business in Las Vegas region. The overview of the dataset is showing below:
+ - Data Resource:
+ - Main Dataset: "COVID-19 containment and mitigation measures"
+ - https://www.kaggle.com/paultimothymooney/covid19-containment-and-mitigation-measures
+
+     - This Raw Data includes 1703 observations of 16 variables
+     - After data preprocessing, there are 1263 observations of 7 variables
+        - country
+        - start_date
+        - description
+        - keyword
+        - latitude (from Dataset4 below)
+        - longitude (from Dataset4 below)
+        - continent (from Dataset3 below)
+     
+ - Dataset 2: "COVID-19 data from John Hopkins University" : Compared with time series plot of measures
+ - https://www.kaggle.com/antgoldbloom/covid19-data-from-john-hopkins-university
+ 
+ - Dataset3: "Countries-Continents.csv" : Get latitude and longitude from the country name
+ - https://github.com/dbouquin/IS_608/blob/master/NanosatDB_munging/Countries-Continents.csv
+ 
+ - Dataset4: "latitude-and-longitude-for-every-country-and-state" : Get continent from the country name
+ - https://www.kaggle.com/paultimothymooney/latitude-and-longitude-for-every-country-and-state
+
+ - The overviews of the cleaned dataset are shown below:
+ 
+```{r}
+library(tidyverse)
+library(dplyr)
+```
+
+```{r}
+measures=read_csv("COVID_19_Containment_measures_data.csv")
+#head(measures)
+```
+ 
+
+```{r}
+measures1=measures[-c(1:2, 5, 7:9, 11:16)]
+#glimpse(measures1)
+
+measures2=measures1[!is.na(measures1$Country)&!is.na(measures1$`Date Start`)&!is.na(measures1$`Description of measure implemented`)&!is.na(measures1$Keywords),]
+#glimpse(measures2)
+
+measures3=measures2 %>% 
+  rename(
+    country = Country,
+    start_date = `Date Start`,
+    description = `Description of measure implemented`,
+    keyword = Keywords
+    )
+#head(measures3)
+#glimpse(measures3)
+```
+
+```{r}
+#Get the latitude and longitude of the country
+loc_country=read_csv("world_country_and_usa_states_latitude_and_longitude_values.csv")
+loc_country1=loc_country[c(2:4)]
+#measures4=merge(measures3, loc_country1, by="country")
+
+measures5=left_join(measures3, loc_country1, by="country")
+measures6=measures5[is.na(measures5$latitude),]
+#unique(measures6$country)
+
+loc_country1$country[loc_country1$country == "Czech Republic"] = "Czechia"
+loc_country1$country[loc_country1$country == "Macedonia [FYROM]"]="Macedonia"
+loc_country1$country[loc_country1$country == "Palestinian Territories"]="Palestine"
+
+measures7=left_join(measures3, loc_country1, by="country")
+measures8=measures7[is.na(measures7$latitude),]
+#unique(measures8$country)
+
+measures9=merge(measures3, loc_country1, by="country")
+measures9$start_date=t(data.frame(lapply(measures9$start_date, function(x) as.Date(x, format="%b %d, %y"))))
+#head(measures9)
+measures10=measures9 %>% filter(start_date <= "2020-12-05")
+#measures9[is.na(measures9$latitude),]
+```
+
+```{r}
+corona_data=read_csv("CONVENIENT_global_confirmed_cases.csv")
+#head(corona_data)
+corona_data1=corona_data[-1,]
+corona_data1[, c(2:272)]=apply(corona_data1[, c(2:272)], 2, function(x) as.numeric(as.character(x)))
+#head(corona_data1)
+
+corona_data1$confirmed_cases = as.vector(rowSums(corona_data1[, c(2:272)], na.rm=TRUE))
+#ncol(corona_data)
+corona_data2=corona_data1[, c(1,273)]
+colnames(corona_data2)[colnames(corona_data2) == 'Country/Region'] = 'start_date'
+
+corona_data2$start_date=t(data.frame(lapply(corona_data2$start_date, function(x) as.Date(x, format="%m/%d/%y"))))
+#head(corona_data2)
+
+#merge with measures dataset
+
+#measures10=left_join(measures9, corona_data2, by="start_date")
+#head(measures10)
+```
+
+```{r}
+continent_dt=read.csv("country_continent.csv")
+colnames(continent_dt)[which(names(continent_dt) == "Country")] <- "country"
+measure11_continent=left_join(measures10,continent_dt,by="country")
+# measure11_continent.1=measure11_continent[is.na(measure11_continent$Continent),]
+# unique(measure11_continent.1$country)
+measure11_continent$Continent[measure11_continent$country == "Czechia"] = "Europe"
+measure11_continent$Continent[measure11_continent$country == "Faroe Islands"] = "Europe"
+measure11_continent$Continent[measure11_continent$country == "Guernsey"] = "Europe"
+measure11_continent$Continent[measure11_continent$country == "Jersey"] = "Europe"
+measure11_continent$Continent[measure11_continent$country == "Kosovo"] = "Europe"
+measure11_continent$Continent[measure11_continent$country == "North Korea"] = "Asia"
+measure11_continent$Continent[measure11_continent$country == "Hong Kong"] = "Asia"
+measure11_continent$Continent[measure11_continent$country == "Russia"] = "Asia"
+measure11_continent$Continent[measure11_continent$country == "Palestine"] = "Asia"
+measure11_continent$Continent[measure11_continent$country == "Taiwan"] = "Asia"
+measure11_continent$Continent[measure11_continent$country == "South Korea"] = "Asia"
+measure11_continent$Continent[measure11_continent$country == "United States"] = "North America"
+#head(measure11_continent)
+```
+
+```{r}
+m=measures10
+m_continent=measure11_continent
+```
+
+```{r}
+library(DT)
+datatable(measure11_continent) 
+```
+
+Histogram {data-navmenu="EDA"}
+==================
+### **Histogram**
+
+ - Most countries have taken less than 25 measures regarding COVID19.
+
+Row 
+-------------------------------------
+### COVID19 Measures Quantity Histogram
+```{r}
+library(ggpubr)
+theme_set(theme_pubr())
+#group by country
+m_e1=measure11_continent %>%
+  group_by(country) %>%
+  summarise(measure_num = n(),continent=Continent) 
+
+m_e1=m_e1[!duplicated(m_e1$country), ]
+#unique(m_e1$continent)
+
+m_e1 %>% arrange(desc(measure_num)) -> m_b.1
+
+# Using hist() function in base graphics to make a histogram
+#histinfo=hist(m_b.1$measure_num, main="Histogram with the Number of COVID19 Measures")
+p_his <- ggplot(m_b.1, aes(x=measure_num)) +
+    geom_histogram(aes(y=..density..),      # Histogram with density instead of count on y-axis
+                   binwidth=2,
+                   colour="black", fill="white") +
+    geom_density(alpha=.3, fill="lightskyblue3")
+
+p_his + labs(x = "The Number of Measures", y = "Density", title = "COVID19 Measures Density Curve (by Country)") + coord_fixed(ratio = 100)
+```
+ 
+
+Box Plot {data-navmenu="EDA"}
+==================
+### **Box Plot**
+
+ - The average COVID19 relative measures quantities of South America and Europe are higher than other continents.
+ - The average COVID19 relative measures quantity of Oceania is the least. The outlier (China) with the highest y-value(most measures) within Asia.
+
+Row 
+-------------------------------------
+### Measures Quantity by Continents
+```{r}
+library(ggplot2)
+bp <- ggplot(m_e1, aes(x=continent, y=measure_num, fill=continent)) + 
+  geom_boxplot()+
+  labs(title="The COVID19 Relative Measures Quantity by Continents",x="Continent", y = "Number of Measures")+
+  scale_fill_brewer(palette="Blues") + theme_classic()
+
+bp
+```   
+
+
+
+Bar Plot{data-navmenu="EDA"}
+==================
+
+### **Bar Plot**
+
+ - These two plots shows the first 30 countries which have taken the most measures about COVID19.
+ - It shows that China has taken the most COVID19 measures till 2020-04-05.
+ - All Countries except China took less than 100 COVID19 measures, and most countries took less than 20 relative measures.
+ 
+Row 
+-------------------------------------
+### Top 30 Countries: With Most COVID19 Measures - Bar Plot
+```{r}
+m_b.2<- data.frame(id=seq(1,nrow(m_b.1)),m_b.1)[1:30,]
+
+p2=ggplot(m_b.2 ,aes(country, measure_num))
+p2=p2 + geom_bar(stat="identity", fill="lightskyblue3", colour="darkgrey", width=0.7, position = position_dodge(width=0.5))
+p2 + theme(axis.text.x=element_text(angle=60, hjust=1)) + ggtitle("Top 30 Countries: With Most COVID19 Measures") +xlab("Countries")+ylab("Measures Number")#+stat_summary(fun.y = min, colour = "darkblue", geom = "point", size = 1) 
+```
+
+### Top 30 Countries: With Most COVID19 Measures - Circular Bar Plot
+```{r}
+m_b.2<- data.frame(id=seq(1,nrow(m_b.1)),m_b.1)[1:20,]
+# ----- This section prepare a dataframe for labels ---- #
+# Get the name and the y position of each label
+label_m_b.2 <- m_b.2
+ 
+# calculate the ANGLE of the labels
+num_bar <- nrow(label_m_b.2)
+angle <-  90 - 360 * (label_m_b.2$id-0.5) /num_bar     # I substract 0.5 because the letter must have the angle of the center of the bars. Not extreme right(1) or extreme left (0)
+ 
+# calculate the alignment of labels: right or left
+# If I am on the left part of the plot, my labels have currently an angle < -90
+label_m_b.2$hjust<-ifelse( angle < -90, 1, 0)
+ 
+# flip angle BY to make them readable
+label_m_b.2$angle<-ifelse(angle < -90, angle+180, angle)
+# ----- ------------------------------------------- ---- #
+ 
+
+# Start the plot
+p1 <- ggplot(m_b.2, aes(x=as.factor(id), y=measure_num, fill = measure_num)) +      
+  ggtitle("Top 30 Countries: With Most COVID19 Measures")+
+
+#  opts(title="Top 30 Countries: With Most COVID19 Measures")
+# Note that id is a factor. If x is numeric, there is some space between the first bar
+  
+  # This add the bars with a blue color
+  geom_bar(stat="identity", fill=alpha("skyblue", 0.7)) +
+  
+  # Limits of the plot = very important. The negative value controls the size of the inner circle, the positive one is useful to add size over each bar
+  ylim(-50,250) +
+  
+  # Custom the theme: no axis title and no cartesian grid
+  theme(plot.title = element_text(size = 2, face = "bold"))+
+  theme_minimal() + xlab("")+ylab("")+
+#     theme(
+# # #   axis.text = element_blank(),
+# # # #    axis.title = element_blank(),
+#      panel.grid = element_blank(),
+#      plot.margin = unit(rep(-1,4), "cm")      # Adjust the margin to make in sort labels are not truncated!
+#     ) +
+  
+  # This makes the coordinate polar instead of cartesian.
+  coord_polar(start = 0) +
+  
+  # Add the labels, using the label_data dataframe that we have created before
+  geom_text(data=label_m_b.2, aes(x=id, y=measure_num+30, label=paste(country,measure_num,sep=": "), hjust=hjust), color="black", fontface="bold",alpha=0.6, size=3, angle= label_m_b.2$angle, inherit.aes = FALSE ) 
+p1
+```
+
+Pie Chart{data-navmenu="EDA"}
+==================
+### **Pie Chart**
+- The first pie chart shows the total number of the COVID19 measures which have been taken by continent.
+  - According to the first pie chart, Europe and Asia have taken the most relative measures.
+- The second pie chart shows the total number of the countries which have taken some COVID19 measures by continent.
+  - According to the second pie chart, the countries in Europe and Asia are the most.
+
+Row 
+-------------------------------------
+### Pie Chart: The Measures Quantity by Continents
+```{r}
+m_e2.1=m_e1 %>%
+  group_by(continent) %>%
+  summarise(measure_num = sum(measure_num)) 
+#subset(m_e1, continent == "South America")
+
+m_e2.1 %>% arrange(desc(measure_num)) -> m_e2.11
+
+blank_theme <- theme_minimal()+
+  theme(
+  axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  panel.border = element_blank(),
+  panel.grid=element_blank(),
+  axis.ticks = element_blank(),
+  plot.title=element_text(size=14, face="bold")
+  )
+
+library(ggrepel)
+pie1 <- ggplot(m_e2.11, aes(x = "", y = measure_num, fill = fct_inorder(continent))) +#, fill = fct_inorder(continent)
+       scale_fill_brewer("Blues") +
+       geom_bar(width = 1, stat = "identity") +
+       coord_polar("y", start = 0) +
+       geom_label_repel(aes(label = measure_num), size=3, show.legend = F, nudge_x = 2) +
+       guides(fill = guide_legend(title="Continent"))+xlab("")+ylab("")+
+       blank_theme+
+       theme(legend.position = "right")+
+       ggtitle("The Total Quantity of Measures")
+       # theme(axis.text = element_blank(),
+       # axis.ticks = element_blank(),
+       # panel.grid  = element_blank())
+pie1
+```
+
+### Pie Chart: The Countries with COVID19 Measures Quantity by Continents
+```{r}
+m_e2.2=m_e1 %>%
+  group_by(continent) %>%
+  summarise(country_num = n()) 
+#subset(m_e1, continent == "Asia")
+
+m_e2.2 %>% arrange(desc(country_num)) -> m_e2.21
+
+library(ggrepel)
+pie2 <- ggplot(m_e2.21, aes(x = "", y = country_num, fill = fct_inorder(continent))) +
+       scale_fill_brewer("Blues") +
+       geom_bar(width = 1, stat = "identity") +
+       coord_polar("y", start = 0) +
+       geom_label_repel(aes(label = country_num), size=3, show.legend = F, nudge_x = 2) +
+       guides(fill = guide_legend(title="Continent"))+#xlab("")+ylab("")+
+       blank_theme+
+       theme(legend.position = "right")+
+       ggtitle("The Totol Quantity of Countries with COVID19 Measures")
+pie2
+```
+
+Time Series
+==================
+### **Time Series**
+- The first time series plot shows that the number of new COVID19 measures per day from Jan. 2020 to Apr. 2020.
+  - According to the first plot, the number of new measures arose obviously in mid-March.
+- The second time series plot shows the total number of the COVID19 measures from Jan. 2020 to Apr. 2020 accompanied with the total number of worldwide confirmed COVID19 cases dashed line.
+  - According to the second time series, the measures quantity increase with the rapidly upward trend of worldwide confirmed COVID19 cases.
+
+Row 
+-------------------------------------
+### Time Series: The Quantity of New Measures Per Day
+```{r}
+library(ggplot2)
+library(dplyr)
+library(hrbrthemes)
+#group by start_date - time series
+m2=m %>%
+  group_by(start_date) %>%
+  summarise(measure_num = n())
+m2[,"cum_measure_num"] <- cumsum(m2$measure_num)
+
+m2.2=m2[,c(1,2)]
+m2.2$start_date <- as.Date(m2.2$start_date)
+# Most basic bubble plot
+p_ts <- ggplot(m2.2, aes(start_date, y=measure_num)) +
+  geom_line( color="steelblue") + 
+  geom_point(fill="blue", color="darkred", size=0.5) +
+  xlab("Date(Month)") +ylab("The New Measures Number Per Day")+
+  ggtitle("The New Measures Quantity Per Day")+
+  theme_ipsum() +
+  theme(axis.text.x=element_text(angle=60, hjust=1)) +
+  scale_x_date(limit=c(as.Date("2020-01-01"),as.Date("2020-04-15"))) +
+  ylim(0,120)
+p_ts
+```
+
+### Time Series: The Quantity of all COVID19 Measures & The Number of Total Confirmed COVID19 Cases
+```{r}
+m2.1=m2[,c(1,3)]
+m2.1$start_date <- as.Date(m2.1$start_date)
+
+corona_data2[,"confirmed_cases"] <- cumsum(corona_data2$confirmed_cases)
+#corona_data2$"Country/Region"=t(data.frame(lapply(corona_data2$"Country/Region", function(x) as.Date(x, format="%m/%d/%y"))))
+#head(corona_data2)
+corona_data2.1=corona_data2
+#corona_data2.1[,"confirmed_cases"] <- cumsum(corona_data2.1$confirmed_cases)
+#colnames(corona_data2.1)[which(names(corona_data2.1) == "Country/Region")] <- "start_date"
+corona_data2.1$start_date <- as.Date(corona_data2.1$start_date)
+
+# install.packages("devtools")
+# library(devtools)
+# devtools::install_github("hrbrmstr/hrbrthemes")
+library(ggplot2)
+library(hrbrthemes)
+#library(gcookbook)
+library(tidyverse)
+
+data_ts1=left_join(m2.1,corona_data2.1,by="start_date")
+
+coeff=1000
+
+measures_Color <- "steelblue"
+corona_Color <- "rosybrown"
+
+ggplot(data_ts1, aes(x=start_date)) +
+  geom_line(aes(y=cum_measure_num), size=0.8, color=measures_Color) + 
+  geom_line(aes(y=confirmed_cases/coeff), size=0.8, color=corona_Color,linetype = "dashed") +
+  scale_y_continuous(
+    # Features of the first axis
+    name = "The Total Number of Measures",
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~.*coeff, name="The Total Confirmed Cases")) +
+  xlab("Date ( Month )")+
+  theme_ipsum() +
+  theme(axis.title.y = element_text(color = measures_Color, size=12),
+        axis.title.y.right = element_text(color = corona_Color, size=12)) + 
+  ggtitle("The Confirmed Cases Up, the Measures Quantity Up")
+```
+
+Word Cloud & Bar Plot{data-navmenu="Textual"}
+==================
+### **Word Cloud & Bar Plot**
+- The first row with word cloud and bar plot shows the top 30 most frequent words in the descriptions of COVID19 measures.
+  - According to these plots, "March" is the most frequent word.
+- The second row with word cloud and bar plot shows the top 30 most frequent words in the key words of COVID19 measures.
+  - According to these plots, "International", "Countries", "Closure" is the most frequent word.
+
+Row 
+-------------------------------------
+### Word Cloud: Description about the COVID19 Measures
+```{r}
+# Load
+library("tm")# for text mining
+library("SnowballC")# for text stemming
+library("wordcloud")# word-cloud generator 
+library("RColorBrewer")# color
+```
+
+```{r}
+description2=Corpus(VectorSource(m$description))
+#inspect(description2)
+
+tran_space=content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+description2=tm_map(description2, tran_space, "@")
+description2=tm_map(description2, tran_space, "\\|")
+description2=tm_map(description2, tran_space, "/")
+
+# Convert the text to lower case
+description2=tm_map(description2, content_transformer(tolower))
+# Remove numbers
+description2=tm_map(description2, removeNumbers)
+# Remove english common stopwords
+description2=tm_map(description2, removeWords, stopwords("english"))
+# Remove punctuations
+description2=tm_map(description2, removePunctuation)
+# Eliminate extra white spaces
+description2=tm_map(description2, stripWhitespace)
+# Text stemming
+# docs <- tm_map(docs, stemDocument)
+
+```
+
+```{r}
+td_description=TermDocumentMatrix(description2)
+td_description2=as.matrix(td_description)
+td_description2_sort=sort(rowSums(td_description2),decreasing=TRUE)
+df_td_description2_sort=data.frame(word = names(td_description2_sort),freq=td_description2_sort)
+#head(df_td_description2_sort, 10)
+#https://ggplot2.tidyverse.org/reference/scale_brewer.html
+#lots of blue plots
+```
+
+```{r}
+set.seed(2020)
+wordcloud(words = df_td_description2_sort$word, freq = df_td_description2_sort$freq, min.freq = 30,
+          random.order=FALSE, rot.per=0.4, 
+#          colors=brewer.pal(8, "Dark2"))
+          colors=brewer.pal(8, "Blues"))
+```
+
+### Bar Plot: Top 30 Most Frequent Words in the Descriptions of Measures
+```{r}
+word_freq=ggplot(df_td_description2_sort[1:30,] ,aes(word, freq))
+word_freq=word_freq + geom_bar(stat="identity", fill="lightskyblue3", colour="darkgrey", width=0.7, position = position_dodge(width=0.5))
+word_freq + theme(axis.text.x=element_text(angle=45, hjust=1)) + ggtitle("Top 30 Most Frequent Words in the Descriptions of Measures") +xlab("The Words in Descriptions")+ylab("Word Frequencies")#+stat_summary(fun.y = min, colour = "darkblue", geom = "point", size = 1) 
+```
+
+Row 
+-------------------------------------
+### Word Cloud: Key Words about the COVID19 Measures
+```{r}
+keyword2=Corpus(VectorSource(m$keyword))
+#inspect(description2)
+
+tran_space2=content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+keyword2=tm_map(keyword2, tran_space2, "@")
+keyword2=tm_map(keyword2, tran_space2, "\\|")
+keyword2=tm_map(keyword2, tran_space2, "/")
+
+# Convert the text to lower case
+keyword2=tm_map(keyword2, content_transformer(tolower))
+# Remove numbers
+keyword2=tm_map(keyword2, removeNumbers)
+# Remove english common stopwords
+keyword2=tm_map(keyword2, removeWords, stopwords("english"))
+# Remove punctuations
+keyword2=tm_map(keyword2, removePunctuation)
+# Eliminate extra white spaces
+keyword2=tm_map(keyword2, stripWhitespace)
+
+td_keyword=TermDocumentMatrix(keyword2)
+td_keyword2=as.matrix(td_keyword)
+td_keyword2_sort=sort(rowSums(td_keyword2),decreasing=TRUE)
+df_td_keyword2_sort=data.frame(word = names(td_keyword2_sort),freq=td_keyword2_sort)
+df=df_td_keyword2_sort %>% 
+  mutate(word = reorder(word, freq))
+
+set.seed(2020)
+wordcloud(words = df_td_keyword2_sort$word, freq = df_td_keyword2_sort$freq, min.freq = 60,
+          random.order=FALSE, rot.per=0.35, 
+#          colors=brewer.pal(8, "Dark2"))
+          colors=brewer.pal(7, "Blues"))
+```
+
+### Bar Plot: Top 30 Most Frequent Words in the Keywords of Measures
+```{r}
+keyword_freq=ggplot(df[1:30,] ,aes(word, freq))
+keyword_freq=keyword_freq + geom_bar(stat="identity", fill="lightsteelblue2", colour="darkgrey", width=0.7, position = position_dodge(width=0.5))
+keyword_freq + theme(axis.text.x=element_text(angle=10, hjust=1)) + ggtitle("Top 30 Most Frequent Keywords of Measures") +xlab("The Words in Keywords")+ylab("Word Frequencies")+coord_flip()
+#+stat_summary(fun.y = min, colour = "darkblue", geom = "point", size = 1) 
+```
+
+Network {data-navmenu="Textual"}
+==================
+### **Network**
+- These two network plots visualize the relationship between the words in the descriptions of COVID19 measures.
+  - For example, the words like "hubei", "china" are highly correlated with "implemented", which shows there were several measures aimed at hubei and china.
+  
+Row 
+-------------------------------------
+### The Static Network Plot
+
+```{r}
+# Data Wrangling and Visualization
+library(glue)
+library(cowplot)
+#install.packages("magrittr")
+library(magrittr)
+library(plotly)
+library(tidyverse)
+library(widyr)
+# Date & Time Manipulation.
+library(hms)
+library(lubridate) 
+# Text Mining
+library(tidytext)
+# Network Analysis
+library(igraph)
+# Network Visualization (D3.js)
+library(networkD3)
+library("tibble")
+```
+
+```{r}
+decrip=data.frame(m$description)
+decrip$m.description=as.character(decrip$m.description)
+#head(decrip)
+tweets.df <- decrip %>% 
+  # Convert to lowercase. 
+  mutate(m.description = m.description %>% str_to_lower) %>% 
+  # Remove unwanted characters. 
+  mutate(m.description= m.description %>% str_remove_all(pattern = '\\n')) %>% 
+  mutate(m.description = m.description %>% str_remove_all(pattern = '&amp')) %>% 
+  # Remove hashtags.
+  mutate(m.description = m.description %>% str_remove_all(pattern = '#[a-z,A-Z]*')) %>% 
+  # Remove accounts.
+  mutate(m.description = m.description %>% str_remove_all(pattern = '@[a-z,A-Z]*')) %>% 
+  # Remove retweets.
+  mutate(m.description = m.description %>% str_remove_all(pattern = 'rt [a-z,A-Z]*: ')) %>% 
+  mutate(m.description = m.description %>% str_remove(pattern = '^(rt)')) %>% 
+  mutate(m.description = m.description %>% str_remove_all(pattern = '\\_')) 
+
+# Replace accents. 
+replacement.list <- list('á' = 'a', 'é' = 'e', 'í' = 'i', 'ó' = 'o', 'ú' = 'u')
+
+tweets.df %<>% 
+  mutate(m.description = chartr(old = names(replacement.list) %>% str_c(collapse = ''), 
+                       new = replacement.list %>% str_c(collapse = ''),
+                       x = m.description))
+
+corpus <-  Corpus(x = VectorSource(x = tweets.df$m.description))
+
+tweets.text <- corpus %>% 
+  tm_map(removePunctuation) %>% 
+  tm_map(removeNumbers) %>% 
+  tm_map(removeWords, stopwords('spanish')) %>% 
+  tm_map(PlainTextDocument) # %>% 
+  # We could also use stemming by uncommenting the folowing line. 
+  # tm_map(stemDocument, 'spanish')
+
+# Recover data into original tibble.
+tweets.df %<>% mutate(m.description = tweets.text[[1]]$content)
+
+bi.gram.words <- tweets.df %>% 
+    tidytext::unnest_tokens(
+    input = m.description, 
+    output = bigram, 
+    token = 'ngrams', 
+    n = 2
+  ) %>% 
+  filter(! is.na(bigram))
+
+# bi.gram.words %>% 
+#   select(bigram) #%>% 
+#   #head(10)
+
+extra.stop.words <- c('q')
+
+stopwords.df <- tibble(
+  word = c(stopwords("es"), 
+          # We have some tweets in english.
+           stopwords("en"),  
+           extra.stop.words)
+  )
+
+bi.gram.words %<>% 
+  separate(col = bigram, into = c('word1', 'word2'), sep = ' ') %>% 
+  filter(! word1 %in% stopwords.df$word) %>% 
+  filter(! word2 %in% stopwords.df$word) %>% 
+  filter(! is.na(word1)) %>% 
+  filter(! is.na(word2)) 
+
+#head(bi.gram.words)
+
+bi.gram.count <- bi.gram.words %>% 
+  count(word1, word2, sort = TRUE) %>% 
+  # We rename the weight column so that the 
+  # associated network gets the weights (see below).
+  rename(weight = n)
+
+#bi.gram.count %>% head()
+
+threshold =20
+
+# For visualization purposes we scale by a global factor. 
+ScaleWeight <- function(x, lambda) {
+  x / lambda
+}
+
+network <-  bi.gram.count %>%
+  filter(weight > threshold) %>%
+  mutate(weight = ScaleWeight(x = weight, lambda = 2E3)) %>% 
+  igraph::graph_from_data_frame(directed = FALSE)
+
+# network
+# is.weighted(network)
+
+plot(
+  network, 
+  vertex.size = 1,
+  vertex.label.color = 'black', 
+  vertex.label.cex = 0.7, 
+  vertex.label.dist = 1,
+  edge.color = 'gray', 
+  main = 'Bigram Count Network', 
+  sub = glue('Weight Threshold: {threshold}'), 
+  alpha = 50
+)
+```
+
+### The Interactive Network Plot
+```{r}
+# Treshold
+threshold <- 20
+
+network <-  bi.gram.count %>%
+  filter(weight > threshold) %>%
+  graph_from_data_frame(directed = FALSE)
+
+# Store the degree.
+V(network)$degree <- strength(graph = network)
+# Compute the weight shares.
+E(network)$width <- E(network)$weight/max(E(network)$weight)
+
+# Create networkD3 object.
+network.D3 <- igraph_to_networkD3(g = network)
+# Define node size.
+network.D3$nodes %<>% mutate(Degree = (1E-2)*V(network)$degree)
+# Degine color group (I will explore this feature later).
+network.D3$nodes %<>% mutate(Group = 1)
+# Define edges width. 
+network.D3$links$Width <- 10*E(network)$width
+
+forceNetwork(
+  Links = network.D3$links, 
+  Nodes = network.D3$nodes, 
+  Source = 'source', 
+  Target = 'target',
+  NodeID = 'name',
+  Group = 'Group', 
+  opacity = 0.9,
+  Value = 'Width',
+  Nodesize = 'Degree', 
+  # We input a JavaScript function.
+  linkWidth = JS("function(d) { return Math.sqrt(d.value); }"), 
+  fontSize = 12,
+  zoom = TRUE, 
+  opacityNoHover = 1
+)
+```
+
+Geographical
+==================
+### **Geographical**
+- The Geographical Plot visualize the distribution of the quantity of the COVID19 measures having been taken from Jan.2020 to April. 2020 on world map.
+  - The darker the color of certain country is, the more measures having been taken by this country.
+  - For example, the areas of China and Italy are the darkest.
+  
+Row 
+-------------------------------------
+### The Geographical Plot: The Distribution of Measures Quantity on World Map
+```{r}
+library(maps)
+library(mapdata)
+library(ggmap)
+library(leaflet) 
+library(rgdal) 
+library(sp)
+library(maps)
+library(maptools)
+library(leaflet)
+```
+
+```{r}
+m.map=m %>%
+  group_by(country) %>%
+  summarise(measure_num = n()) 
+# m1.2=left_join(m1, measures10, by="country")[,c(1, 2, 7, 8)]
+# m1.3=m1.2[!duplicated(m1.2$country), ]
+colnames(m.map)[which(names(m.map) == "country")] <- "NAME"
+
+
+# # Download the shapefile. 
+# download.file("http://thematicmapping.org/downloads/TM_WORLD_BORDERS_SIMPL-0.3.zip" , destfile="DATA/world_shape_file.zip")
+
+# Read this shape file with the rgdal library. 
+world_spdf <- readOGR( 
+  dsn= paste0(getwd(),"/shape_data/world_shape_file/") , 
+  layer="TM_WORLD_BORDERS_SIMPL-0.3",
+  verbose=FALSE
+)
+
+world_spdf@data=left_join(world_spdf@data, m.map, by="NAME")
+world_spdf@data$measure_num[is.na(world_spdf@data$measure_num)]=0
+
+# Create a color palette with handmade bins.
+#library(RColorBrewer)
+mybins <- c(0, 10, 20, 50, 80, 100,Inf)
+mypalette <- colorBin( palette="Blues", domain=world_spdf@data$measure_num, na.color="transparent", bins=mybins)
+ 
+# Prepare the text for tooltips:
+mytext <- paste(
+    "Country: ", world_spdf@data$NAME,"<br/>", 
+    "The Number of Measures: ", world_spdf@data$measure_num, 
+    sep="") %>%
+  lapply(htmltools::HTML)
+ 
+# Final Map
+map2=leaflet(world_spdf) %>% 
+  addTiles()  %>% 
+  setView(lat=30, lng=10 , zoom=1.5) %>% 
+  addPolygons( 
+    fillColor = ~mypalette(measure_num), 
+    stroke=TRUE, 
+    fillOpacity = 0.9, 
+    color="white", 
+    weight=0.3,
+    label = mytext,
+    labelOptions = labelOptions( 
+      style = list("font-weight" = "normal", padding = "3px 8px"), 
+      textsize = "13px", 
+      direction = "auto"
+    )
+  ) %>%
+  addLegend( pal=mypalette, values=~measure_num, opacity=0.9, title = "Mesures_Num", position = "bottomleft" )
+
+map2
+library(htmlwidgets)
+saveWidget(map2, file=paste0(getwd(), "/choroplethLeaflet2.html"))
+```
+
+Software & Package {data-navmenu="About"}
+==================
+### **Software & Package**
+
+The project conducts by flexdashboard of RStudio. The following package are used in the project.
+
+```{r}
+x=installed.packages()[names(sessionInfo()$otherPkgs), "Version"]
+x
+```
