@@ -3,18 +3,18 @@ title: ""
 output: html_document
 ---
 
-# Welcome to the website of Jiahui Chen! 
+## **Welcome to the website of Jiahui Chen!**
 
 Hi, this is Jiahui Chen, a second-year student of Georgetown University, majored in Analytics.<br>
-
+<br>
 ## Project
-
 It is the final project of class - Analytical Data Visualization.
 The topic of this project is COVID-19 Measures Analysis.<br>
-
+<br>
 ## Homework
 It includes all my homework of class - Analytical Data Visualization.<br>
-
+<br>
+<br>
 ## **Thanks! My Little Cat!**
 
 <img src="https://github.com/jiajianaonaobao/ANLY503_Portfolio/blob/main/plot/Homepage.png?raw=true">

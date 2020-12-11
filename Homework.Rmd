@@ -1,6 +1,5 @@
 ---
 title: "Homework"
-author: "Jiahui Chen"
 output:
    flexdashboard::flex_dashboard:
      theme: bootstrap

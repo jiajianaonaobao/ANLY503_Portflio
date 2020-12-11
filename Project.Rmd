@@ -1,7 +1,5 @@
 ---
 title: 'COVID-19 Measures Analysis '
-author: "Jiahui Chen"
-date: "12/11/2020"
 output:
    flexdashboard::flex_dashboard:
      theme: bootstrap
@@ -21,7 +19,6 @@ Based the analysis, this project could study the reaction of different countries
   - Explanatory Data Analysis (including histogram, box plot, bar plot, pie chart)
     - Visualize the COVID19 measures quantity by country, and by continent
     - Visualize the quantity of the countries which have taken some COVID19 measures by continent
-    
 
   - Time Series Analysis
     - Visualize the number of new COVID19 measures per day from Jan. 2020 to Apr. 2020
@@ -30,7 +27,7 @@ Based the analysis, this project could study the reaction of different countries
   - Textual (including word cloud, bar plot, network)
     - Visualize the most frequent words in key words and description of COVID19 measures
     - Visualize the relationship between the words in the descriptions of COVID19 measures (Sentiment analysis)
-    
+ 
   - Geographical Analysis
     - Visualize the distribution of the COVID19 measures quantity by country on world map
     - The quantity of the COVID19 measures of each country could be reflected by the color shade
@@ -63,6 +60,9 @@ https://www.kaggle.com/ksjpswaroop/yelp-data-analysis?select=yelp_business.csv
  
  - Dataset4: "latitude-and-longitude-for-every-country-and-state" : Get continent from the country name
  - https://www.kaggle.com/paultimothymooney/latitude-and-longitude-for-every-country-and-state
+
+ - Dataset5: "world_shape_file" : Get world shape for Geographical Analysis
+ - http://thematicmapping.org/downloads/TM_WORLD_BORDERS_SIMPL-0.3.zip
 
  - The overviews of the cleaned dataset are shown below:
  
@@ -251,50 +251,19 @@ p2 + theme(axis.text.x=element_text(angle=60, hjust=1)) + ggtitle("Top 30 Countr
 ### Top 30 Countries: With Most COVID19 Measures - Circular Bar Plot
 ```{r}
 m_b.2<- data.frame(id=seq(1,nrow(m_b.1)),m_b.1)[1:20,]
-# ----- This section prepare a dataframe for labels ---- #
-# Get the name and the y position of each label
 label_m_b.2 <- m_b.2
- 
-# calculate the ANGLE of the labels
 num_bar <- nrow(label_m_b.2)
-angle <-  90 - 360 * (label_m_b.2$id-0.5) /num_bar     # I substract 0.5 because the letter must have the angle of the center of the bars. Not extreme right(1) or extreme left (0)
- 
-# calculate the alignment of labels: right or left
-# If I am on the left part of the plot, my labels have currently an angle < -90
+angle <-  90 - 360 * (label_m_b.2$id-0.5) /num_bar  
 label_m_b.2$hjust<-ifelse( angle < -90, 1, 0)
- 
-# flip angle BY to make them readable
 label_m_b.2$angle<-ifelse(angle < -90, angle+180, angle)
-# ----- ------------------------------------------- ---- #
- 
 
-# Start the plot
 p1 <- ggplot(m_b.2, aes(x=as.factor(id), y=measure_num, fill = measure_num)) +      
   ggtitle("Top 30 Countries: With Most COVID19 Measures")+
-
-#  opts(title="Top 30 Countries: With Most COVID19 Measures")
-# Note that id is a factor. If x is numeric, there is some space between the first bar
-  
-  # This add the bars with a blue color
   geom_bar(stat="identity", fill=alpha("skyblue", 0.7)) +
-  
-  # Limits of the plot = very important. The negative value controls the size of the inner circle, the positive one is useful to add size over each bar
   ylim(-50,250) +
-  
-  # Custom the theme: no axis title and no cartesian grid
   theme(plot.title = element_text(size = 2, face = "bold"))+
   theme_minimal() + xlab("")+ylab("")+
-#     theme(
-# # #   axis.text = element_blank(),
-# # # #    axis.title = element_blank(),
-#      panel.grid = element_blank(),
-#      plot.margin = unit(rep(-1,4), "cm")      # Adjust the margin to make in sort labels are not truncated!
-#     ) +
-  
-  # This makes the coordinate polar instead of cartesian.
   coord_polar(start = 0) +
-  
-  # Add the labels, using the label_data dataframe that we have created before
   geom_text(data=label_m_b.2, aes(x=id, y=measure_num+30, label=paste(country,measure_num,sep=": "), hjust=hjust), color="black", fontface="bold",alpha=0.6, size=3, angle= label_m_b.2$angle, inherit.aes = FALSE ) 
 p1
 ```
@@ -338,9 +307,7 @@ pie1 <- ggplot(m_e2.11, aes(x = "", y = measure_num, fill = fct_inorder(continen
        blank_theme+
        theme(legend.position = "right")+
        ggtitle("The Total Quantity of Measures")
-       # theme(axis.text = element_blank(),
-       # axis.ticks = element_blank(),
-       # panel.grid  = element_blank())
+
 pie1
 ```
 
@@ -494,8 +461,6 @@ td_description2=as.matrix(td_description)
 td_description2_sort=sort(rowSums(td_description2),decreasing=TRUE)
 df_td_description2_sort=data.frame(word = names(td_description2_sort),freq=td_description2_sort)
 #head(df_td_description2_sort, 10)
-#https://ggplot2.tidyverse.org/reference/scale_brewer.html
-#lots of blue plots
 ```
 
 ```{r}
@@ -623,10 +588,7 @@ tweets.text <- corpus %>%
   tm_map(removeNumbers) %>% 
   tm_map(removeWords, stopwords('spanish')) %>% 
   tm_map(PlainTextDocument) # %>% 
-  # We could also use stemming by uncommenting the folowing line. 
-  # tm_map(stemDocument, 'spanish')
 
-# Recover data into original tibble.
 tweets.df %<>% mutate(m.description = tweets.text[[1]]$content)
 
 bi.gram.words <- tweets.df %>% 
@@ -637,10 +599,6 @@ bi.gram.words <- tweets.df %>%
     n = 2
   ) %>% 
   filter(! is.na(bigram))
-
-# bi.gram.words %>% 
-#   select(bigram) #%>% 
-#   #head(10)
 
 extra.stop.words <- c('q')
 
@@ -662,8 +620,6 @@ bi.gram.words %<>%
 
 bi.gram.count <- bi.gram.words %>% 
   count(word1, word2, sort = TRUE) %>% 
-  # We rename the weight column so that the 
-  # associated network gets the weights (see below).
   rename(weight = n)
 
 #bi.gram.count %>% head()
@@ -714,7 +670,7 @@ E(network)$width <- E(network)$weight/max(E(network)$weight)
 network.D3 <- igraph_to_networkD3(g = network)
 # Define node size.
 network.D3$nodes %<>% mutate(Degree = (1E-2)*V(network)$degree)
-# Degine color group (I will explore this feature later).
+# Degine color group 
 network.D3$nodes %<>% mutate(Group = 1)
 # Define edges width. 
 network.D3$links$Width <- 10*E(network)$width
@@ -729,7 +685,6 @@ forceNetwork(
   opacity = 0.9,
   Value = 'Width',
   Nodesize = 'Degree', 
-  # We input a JavaScript function.
   linkWidth = JS("function(d) { return Math.sqrt(d.value); }"), 
   fontSize = 12,
   zoom = TRUE, 
@@ -767,11 +722,6 @@ m.map=m %>%
 # m1.3=m1.2[!duplicated(m1.2$country), ]
 colnames(m.map)[which(names(m.map) == "country")] <- "NAME"
 
-
-# # Download the shapefile. 
-# download.file("http://thematicmapping.org/downloads/TM_WORLD_BORDERS_SIMPL-0.3.zip" , destfile="DATA/world_shape_file.zip")
-
-# Read this shape file with the rgdal library. 
 world_spdf <- readOGR( 
   dsn= paste0(getwd(),"/shape_data/world_shape_file/") , 
   layer="TM_WORLD_BORDERS_SIMPL-0.3",
@@ -781,12 +731,9 @@ world_spdf <- readOGR(
 world_spdf@data=left_join(world_spdf@data, m.map, by="NAME")
 world_spdf@data$measure_num[is.na(world_spdf@data$measure_num)]=0
 
-# Create a color palette with handmade bins.
-#library(RColorBrewer)
 mybins <- c(0, 10, 20, 50, 80, 100,Inf)
 mypalette <- colorBin( palette="Blues", domain=world_spdf@data$measure_num, na.color="transparent", bins=mybins)
  
-# Prepare the text for tooltips:
 mytext <- paste(
     "Country: ", world_spdf@data$NAME,"<br/>", 
     "The Number of Measures: ", world_spdf@data$measure_num, 
