@@ -1,8 +1,16 @@
 ---
-title: "About me"
+title: ""
 output: html_document
 ---
 
-## Header
+# Welcome to the website of Jiahui Chen! 
 
-Say more about you here.
+Hi, this is Jiahui Chen, a second-year student of Georgetown University, majored in Analytics.
+
+# Project
+
+It is the final project of class - Analytical Data Visualization.
+The topic of this project is COVID-19 Measures Analysis.
+
+# Homework
+It includes all my homework of class - Analytical Data Visualization.

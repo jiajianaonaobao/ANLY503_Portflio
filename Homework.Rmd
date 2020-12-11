@@ -1,10 +1,113 @@
 ---
-title: "CV"
-output: html_document
+title: "Homework"
+author: "Jiahui Chen"
+output:
+   flexdashboard::flex_dashboard:
+     theme: bootstrap
+     orientation: row
+     vertical_layout: scroll
 ---
 
-<a href="CV.pdf#" class="download" title="Download CV as PDF">Download CV</a>			
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
-## Header
+Problem 1 {data-navmenu="Homework 5"}
+==================
 
-Say more about your CV here.
+Row 
+-------------------------------------
+### **Problem 1**
+
+<img src="https://github.com/jiajianaonaobao/ANLY503_Portflio/blob/main/plot/A5.11.png?raw=true">
+
+Problem 2 {data-navmenu="Homework 5"}
+==================
+
+Row 
+-------------------------------------
+### **Problem 2.1**
+
+<img src="https://github.com/jiajianaonaobao/ANLY503_Portflio/blob/main/plot/A5.21.png?raw=true">
+
+### **Problem 2.2**
+
+<img src="https://github.com/jiajianaonaobao/ANLY503_Portflio/blob/main/plot/A5.22.png?raw=true">
+
+Problem 3 {data-navmenu="Homework 5"}
+==================
+
+Row 
+-------------------------------------
+### **Problem 3.1**
+
+<img src="https://github.com/jiajianaonaobao/ANLY503_Portflio/blob/main/plot/A5.31.png?raw=true">
+
+### **Problem 3.2**
+
+<img src="https://github.com/jiajianaonaobao/ANLY503_Portflio/blob/main/plot/A5.32.png?raw=true">
+
+Problem 4 {data-navmenu="Homework 5"}
+==================
+
+Row 
+-------------------------------------
+### **Problem 4.1**
+
+<img src="https://github.com/jiajianaonaobao/ANLY503_Portflio/blob/main/plot/A5.41.png?raw=true">
+
+### **Problem 4.2**
+
+<img src="https://github.com/jiajianaonaobao/ANLY503_Portflio/blob/main/plot/A5.42.png?raw=true">
+
+Row 
+-------------------------------------
+### **Problem 4.3**
+
+<img src="https://github.com/jiajianaonaobao/ANLY503_Portflio/blob/main/plot/A5.43.png?raw=true">
+
+### **Problem 4.4**
+
+<img src="https://github.com/jiajianaonaobao/ANLY503_Portflio/blob/main/plot/A5.44.png?raw=true">
+
+Row 
+-------------------------------------
+### **Problem 4.5**
+
+<img src="https://github.com/jiajianaonaobao/ANLY503_Portflio/blob/main/plot/A5.45.png?raw=true">
+
+### **Problem 4.6**
+
+<img src="https://github.com/jiajianaonaobao/ANLY503_Portflio/blob/main/plot/A5.46.png?raw=true">
+
+Problem 5 {data-navmenu="Homework 5"}
+==================
+
+Row 
+-------------------------------------
+### **Problem 5**
+
+<img src="https://github.com/jiajianaonaobao/ANLY503_Portflio/blob/main/plot/A5.5.png?raw=true">
+
+Homework 6
+==================
+
+Row 
+-------------------------------------
+### **Homework 6**
+<img src="https://github.com/jiajianaonaobao/ANLY503_Portflio/blob/main/plot/A6.1.png?raw=true">
+
+### **Homework 6**
+<img src="https://github.com/jiajianaonaobao/ANLY503_Portflio/blob/main/plot/A6.2.png?raw=true">
+
+### **Homework 6**
+<img src="https://github.com/jiajianaonaobao/ANLY503_Portflio/blob/main/plot/A6.3.png?raw=true">
+
+Homework 7
+==================
+
+Row 
+-------------------------------------
+### **Homework 7**
+
+<img src="https://github.com/jiajianaonaobao/ANLY503_Portflio/blob/main/plot/A7.png?raw=true">
