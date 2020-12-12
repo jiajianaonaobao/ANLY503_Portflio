@@ -12,9 +12,9 @@ navbar:
       href: Homework.html 
   right:
     - text: "Contact me"
-      href: mailto:jc3029@georgetown.edu                    # CHANGE HERE 
+      href: mailto:jc3029@georgetown.edu                   
     - text: "GitHub"
-      href: https://github.com/jiajianaonaobao      # CHANGE HERE 
+      href: https://github.com/jiajianaonaobao   
 output:
   html_document:
     theme: cosmo
